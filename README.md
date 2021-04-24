@@ -1,1 +1,1 @@
-# nearby
+# NearBy App
