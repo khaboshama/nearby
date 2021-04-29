@@ -26,6 +26,7 @@ import com.khaled.nearbyapp.utils.orFalse
 
 class MainActivity : AppCompatActivity(), LocationListener {
 
+    private lateinit var venueListAdapter: VenueListAdapter
     private var locationRequest: LocationRequest? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
@@ -36,11 +37,17 @@ class MainActivity : AppCompatActivity(), LocationListener {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         setObservers()
+        setupRecyclerView()
         setupLocationService()
     }
 
+    private fun setupRecyclerView() {
+        venueListAdapter = VenueListAdapter()
+        binding.venueRecyclerView.adapter = venueListAdapter
+    }
+
     private fun setObservers() {
-        viewModel.venueList.observe(this, { venueList ->
+        viewModel.venueListLiveData.observe(this, { venueList ->
             binding.loadingContainer.visibility = View.GONE
             if (venueList.isEmpty()) {
                 binding.statusImageView.setImageResource(R.drawable.ic_no_data)
@@ -48,18 +55,22 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 binding.statusContainer.visibility = View.VISIBLE
             } else {
                 binding.statusContainer.visibility = View.GONE
+                venueListAdapter.setVenueList(venueList)
             }
         })
         viewModel.showMessage.observe(this, {
             binding.loadingContainer.visibility = View.GONE
-            if (viewModel.venueList.value.isNullOrEmpty().orFalse()) {
+            if (viewModel.venueListLiveData.value.isNullOrEmpty().orFalse()) {
                 binding.statusImageView.setImageResource(R.drawable.ic_error)
                 binding.statusTextView.text = getString(R.string.something_went_wrong)
                 binding.statusContainer.visibility = View.VISIBLE
             } else {
-                Toast.makeText(this,getString(R.string.something_went_wrong), Toast.LENGTH_LONG).show()
+                Toast.makeText(this, getString(R.string.something_went_wrong), Toast.LENGTH_LONG).show()
                 binding.statusContainer.visibility = View.GONE
             }
+        })
+        viewModel.notifyVenueList.observe(this, { position ->
+            position?.let { venueListAdapter.notifyItemChanged(position, "") }
         })
     }
 
