@@ -17,6 +17,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.location.*
 import com.khaled.nearbyapp.R
 import com.khaled.nearbyapp.databinding.ActivityMainBinding
@@ -44,6 +46,18 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private fun setupRecyclerView() {
         venueListAdapter = VenueListAdapter()
         binding.venueRecyclerView.adapter = venueListAdapter
+        binding.venueRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                if (dy > 0) { //check for scroll down
+                    val visibleItemCount = binding.venueRecyclerView.layoutManager?.childCount ?: 0
+                    val totalItemCount = binding.venueRecyclerView.layoutManager?.itemCount ?: Int.MAX_VALUE
+                    val pastVisibleItems =
+                        (binding.venueRecyclerView.layoutManager as? LinearLayoutManager)?.findFirstVisibleItemPosition()
+                            ?: 0
+                    if ((visibleItemCount + pastVisibleItems) >= totalItemCount) viewModel.loadNextPage()
+                }
+            }
+        })
     }
 
     private fun setObservers() {
@@ -71,6 +85,9 @@ class MainActivity : AppCompatActivity(), LocationListener {
         })
         viewModel.notifyVenueList.observe(this, { position ->
             position?.let { venueListAdapter.notifyItemChanged(position, "") }
+        })
+        viewModel.venueListProgressBarEndlessLoading.observe(this, { isShow ->
+            binding.progressBarEndlessLoading.visibility = if (isShow.orFalse()) View.VISIBLE else View.GONE
         })
     }
 

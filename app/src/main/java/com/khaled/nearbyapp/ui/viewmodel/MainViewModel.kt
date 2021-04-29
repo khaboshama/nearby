@@ -13,33 +13,43 @@ import retrofit2.Response
 
 class MainViewModel : ViewModel() {
 
+    private lateinit var currentLocation: Location
     var venueListLiveData = MutableLiveData<MutableList<Venue>>()
         private set
     var notifyVenueList = SingleLiveEvent<Int>()
+        private set
+    var venueListProgressBarEndlessLoading = SingleLiveEvent<Boolean>()
         private set
     var showMessage = SingleLiveEvent<Void>()
         private set
     private var isSendRequestFinished = true
 
     fun onLocationChanged(location: Location) {
+        currentLocation = location
         if (isSendRequestFinished) {
+            sendVenueListRequest()
+        }
+    }
+
+    private fun sendVenueListRequest() {
+        viewModelScope.launch {
             isSendRequestFinished = false
-            viewModelScope.launch {
-                try {
-                    val offset = venueListLiveData.value?.size ?: 0
-                    val latLong = "${location.latitude}, ${location.longitude}"
-                    val venueListResponse =
-                        RetrofitClient.moneyServiceApi.getVenueList(limit = LIMIT, offset = offset, latLong = latLong)
-                    if (venueListResponse.isSuccessful) {
-                        parseVenueListSuccessResponse(venueListResponse, offset)
-                    } else {
-                        parseVenueListErrorResponse()
-                    }
-                } catch (e: Exception) {
+            try {
+                val offset = venueListLiveData.value?.size ?: 0
+                if (offset != 0) venueListProgressBarEndlessLoading.value = true
+                val latLong = "${currentLocation.latitude}, ${currentLocation.longitude}"
+                val venueListResponse =
+                    RetrofitClient.moneyServiceApi.getVenueList(limit = LIMIT, offset = offset, latLong = latLong)
+                if (venueListResponse.isSuccessful) {
+                    parseVenueListSuccessResponse(venueListResponse, offset)
+                } else {
                     parseVenueListErrorResponse()
                 }
-                isSendRequestFinished = true
+            } catch (e: Exception) {
+                parseVenueListErrorResponse()
             }
+            venueListProgressBarEndlessLoading.value = false
+            isSendRequestFinished = true
         }
     }
 
@@ -52,6 +62,7 @@ class MainViewModel : ViewModel() {
             venueListLiveData.value = venueListResponse.body()?.venueList!!.toMutableList()
         } else {
             venueListLiveData.value?.addAll(venueListResponse.body()?.venueList!!.toMutableList())
+            venueListLiveData.value = venueListLiveData.value
         }
         sendVenuePhotoDetailsRequest(venueListResponse.body()?.venueList)
     }
@@ -64,14 +75,16 @@ class MainViewModel : ViewModel() {
                     if (venuePhotosResponse.isSuccessful) {
                         venue.photo = venuePhotosResponse.body()?.photo
                         notifyVenueList.value = venueListLiveData.value?.indexOf(venue)
-                    } else {
-                        showMessage.call()
                     }
                 }
             } catch (e: Exception) {
-                showMessage.call()
             }
         }
+    }
+
+    fun loadNextPage() {
+        if (isSendRequestFinished.not()) return
+        sendVenueListRequest()
     }
 
     companion object {

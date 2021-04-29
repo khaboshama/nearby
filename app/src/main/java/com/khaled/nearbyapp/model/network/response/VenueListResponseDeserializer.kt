@@ -22,7 +22,10 @@ class VenueListResponseDeserializer : JsonDeserializer<VenueListResponse>(), Ven
                     jsonNodeItems?.let { jsonNodeItem ->
                         jsonNodeItem.forEach { jsonItem ->
                             val jsonNodeVenue: JsonNode? = jsonItem.get("venue")
-                            jsonNodeVenue?.let { jsonVenue -> venueList.add(getVenue(jsonVenue)) }
+                            jsonNodeVenue?.let { jsonVenue ->
+                                val venue = getVenue(jsonVenue)
+                                if (venue.address.isNotEmpty()) venueList.add(venue)
+                            }
                         }
                     }
                 }

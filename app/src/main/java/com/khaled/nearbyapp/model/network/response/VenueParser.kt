@@ -9,7 +9,7 @@ interface VenueParser {
         val id = jsonNodeVenue.get("id").asText()
         val name = jsonNodeVenue.get("name").asText()
         val location: JsonNode? = jsonNodeVenue.get("location")
-        val address = if (location == null) "" else location.get("address").asText()
+        val address = if (location == null) "" else location.get("address")?.takeUnless { it.isNull }?.asText() ?: ""
         return Venue(id, name, address)
     }
 }
