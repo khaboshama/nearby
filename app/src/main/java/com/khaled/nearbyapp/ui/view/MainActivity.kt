@@ -41,6 +41,11 @@ class MainActivity : AppCompatActivity(), LocationListener {
         setObservers()
         setupRecyclerView()
         setupLocationService()
+        setViewsListeners()
+    }
+
+    private fun setViewsListeners() {
+        binding.realTimeToggle.setOnCheckedChangeListener { _, isChecked -> viewModel.isRealTimeUpdates = isChecked }
     }
 
     private fun setupRecyclerView() {

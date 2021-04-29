@@ -14,6 +14,7 @@ import retrofit2.Response
 
 class MainViewModel : ViewModel() {
 
+    var isRealTimeUpdates: Boolean = true
     private lateinit var currentLocation: Location
     var venueListLiveData = MutableLiveData<MutableList<Venue>>()
         private set
@@ -26,9 +27,11 @@ class MainViewModel : ViewModel() {
     private var isSendRequestFinished = true
 
     fun onLocationChanged(location: Location) {
-        currentLocation = location
-        if (isSendRequestFinished) {
-            sendVenueListRequest()
+        if (isRealTimeUpdates) {
+            currentLocation = location
+            if (isSendRequestFinished) {
+                sendVenueListRequest()
+            }
         }
     }
 
