@@ -56,6 +56,7 @@
                 android:textAlignment="viewStart"
                 android:textColor="@color/colorPrimary"
                 android:textSize="16sp"
+                android:textStyle="bold"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/real_time_toggle"
                 app:layout_constraintStart_toStartOf="parent"
