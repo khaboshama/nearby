@@ -1,4 +1,4 @@
-package com.khaled.nearbyapp
+package com.khaled.nearbyapp.ui.view
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -11,21 +11,59 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.location.*
+import com.khaled.nearbyapp.R
+import com.khaled.nearbyapp.databinding.ActivityMainBinding
+import com.khaled.nearbyapp.ui.viewmodel.MainViewModel
+import com.khaled.nearbyapp.utils.orFalse
 
 
 class MainActivity : AppCompatActivity(), LocationListener {
+
     private var locationRequest: LocationRequest? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
+    private val viewModel by lazy { ViewModelProvider(this)[MainViewModel::class.java] }
+    private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
+        setObservers()
+        setupLocationService()
+    }
 
+    private fun setObservers() {
+        viewModel.venueList.observe(this, { venueList ->
+            binding.loadingContainer.visibility = View.GONE
+            if (venueList.isEmpty()) {
+                binding.statusImageView.setImageResource(R.drawable.ic_no_data)
+                binding.statusTextView.text = getString(R.string.no_data_found)
+                binding.statusContainer.visibility = View.VISIBLE
+            } else {
+                binding.statusContainer.visibility = View.GONE
+            }
+        })
+        viewModel.showMessage.observe(this, {
+            binding.loadingContainer.visibility = View.GONE
+            if (viewModel.venueList.value.isNullOrEmpty().orFalse()) {
+                binding.statusImageView.setImageResource(R.drawable.ic_error)
+                binding.statusTextView.text = getString(R.string.something_went_wrong)
+                binding.statusContainer.visibility = View.VISIBLE
+            } else {
+                Toast.makeText(this,getString(R.string.something_went_wrong), Toast.LENGTH_LONG).show()
+                binding.statusContainer.visibility = View.GONE
+            }
+        })
+    }
+
+    private fun setupLocationService() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         createLocationRequest()
         locationCallback = object : LocationCallback() {
@@ -34,6 +72,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 for (location in locationResult.locations) {
                     val message = "location = ${location?.latitude} ${location?.longitude}"
                     Toast.makeText(applicationContext, message, Toast.LENGTH_LONG).show()
+                    viewModel.onLocationChanged(location)
                 }
             }
         }
@@ -76,6 +115,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
     @SuppressLint("MissingPermission")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == LOCATION_REQUEST_CODE) {
             if (checkAllPermissionGranted(grantResults)) {
                 requestLocationUpdates()
@@ -122,6 +162,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
         val message = "location = ${location.latitude} ${location.longitude}"
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
         Log.i("khaled", message)
+        viewModel.onLocationChanged(location)
     }
 
     override fun onProviderEnabled(provider: String) {
@@ -136,7 +177,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
     override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
 
     companion object {
-        private const val LOCATION_INTERVAL_REFRESH_TIME = 2 * 60 * 1000L
+        private const val LOCATION_INTERVAL_REFRESH_TIME = 1 * 60 * 1000L
         private const val LOCATION_REFRESH_DISTANCE = 10f
         private const val LOCATION_REQUEST_CODE = 1000
     }

@@ -16,3 +16,4 @@ local.properties
 gradlew.bat
 gradlew
 .idea/
+apikey.properties
