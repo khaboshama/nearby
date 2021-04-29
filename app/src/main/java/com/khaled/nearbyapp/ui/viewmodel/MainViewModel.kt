@@ -4,6 +4,7 @@ import android.location.Location
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.khaled.nearbyapp.model.Photo
 import com.khaled.nearbyapp.model.Venue
 import com.khaled.nearbyapp.model.network.RetrofitClient
 import com.khaled.nearbyapp.model.network.response.VenueListResponse
@@ -74,6 +75,9 @@ class MainViewModel : ViewModel() {
                     val venuePhotosResponse = RetrofitClient.moneyServiceApi.getVenuePhotos(venueId = venue.id)
                     if (venuePhotosResponse.isSuccessful) {
                         venue.photo = venuePhotosResponse.body()?.photo
+                        notifyVenueList.value = venueListLiveData.value?.indexOf(venue)
+                    } else {
+                        venue.photo = Photo()
                         notifyVenueList.value = venueListLiveData.value?.indexOf(venue)
                     }
                 }
