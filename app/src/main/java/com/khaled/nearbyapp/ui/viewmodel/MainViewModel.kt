@@ -25,6 +25,7 @@ class MainViewModel : ViewModel() {
     var showMessage = SingleLiveEvent<Void>()
         private set
     private var isSendRequestFinished = true
+    private var offsetPosition = 0
 
     fun onLocationChanged(location: Location) {
         if (isRealTimeUpdates) {
@@ -39,7 +40,7 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             isSendRequestFinished = false
             try {
-                val offset = venueListLiveData.value?.size ?: 0
+                val offset = LIMIT * offsetPosition
                 if (offset != 0) venueListProgressBarEndlessLoading.value = true
                 val latLong = "${currentLocation.latitude}, ${currentLocation.longitude}"
                 val venueListResponse =
@@ -68,6 +69,7 @@ class MainViewModel : ViewModel() {
             venueListLiveData.value?.addAll(venueListResponse.body()?.venueList!!.toMutableList())
             venueListLiveData.value = venueListLiveData.value
         }
+        offsetPosition++
         sendVenuePhotoDetailsRequest(venueListResponse.body()?.venueList)
     }
 

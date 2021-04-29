@@ -10,7 +10,6 @@ import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Looper
-import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -45,7 +44,10 @@ class MainActivity : AppCompatActivity(), LocationListener {
     }
 
     private fun setViewsListeners() {
-        binding.realTimeToggle.setOnCheckedChangeListener { _, isChecked -> viewModel.isRealTimeUpdates = isChecked }
+        binding.realTimeToggle.setOnCheckedChangeListener { _, isChecked ->
+            handleStartLocationService()
+            viewModel.isRealTimeUpdates = isChecked
+        }
     }
 
     private fun setupRecyclerView() {
@@ -103,8 +105,6 @@ class MainActivity : AppCompatActivity(), LocationListener {
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
                 for (location in locationResult.locations) {
-                    val message = "location = ${location?.latitude} ${location?.longitude}"
-                    Toast.makeText(applicationContext, message, Toast.LENGTH_LONG).show()
                     viewModel.onLocationChanged(location)
                 }
             }
@@ -175,6 +175,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
     private fun displayLocationEnabledErrorMessage() {
         Toast.makeText(this, "Please enable network and gps, then try again", Toast.LENGTH_LONG).show()
+        binding.loadingContainer.visibility = View.GONE
     }
 
     private fun createLocationRequest() {
@@ -192,26 +193,21 @@ class MainActivity : AppCompatActivity(), LocationListener {
     }
 
     override fun onLocationChanged(location: Location) {
-        val message = "location = ${location.latitude} ${location.longitude}"
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-        Log.i("khaled", message)
         viewModel.onLocationChanged(location)
     }
 
     override fun onProviderEnabled(provider: String) {
-        Toast.makeText(this, "enabled provider = $provider", Toast.LENGTH_LONG).show()
         requestLocationUpdates()
     }
 
     override fun onProviderDisabled(provider: String) {
-        Toast.makeText(this, "disabled provider = $provider", Toast.LENGTH_LONG).show()
     }
 
     override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
 
     companion object {
         private const val LOCATION_INTERVAL_REFRESH_TIME = 1 * 60 * 1000L
-        private const val LOCATION_REFRESH_DISTANCE = 10f
+        private const val LOCATION_REFRESH_DISTANCE = 500f
         private const val LOCATION_REQUEST_CODE = 1000
     }
 }
